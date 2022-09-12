@@ -1,5 +1,6 @@
 #!python3
 
+from gettext import install
 import os
 import sys
 from pathlib import Path
@@ -67,11 +68,22 @@ class Builder(object):
     def package_release(self, name: str) -> bool:
         result = True
 
+        # build the path to the install dir before modiyfing the name
+        # I'm not proud of myself
+
         install_dir = self.install_root / name
+
+        if name == 'bgfx.cmake':
+            name = 'bgfx'
+
+        # Setup archive output path. Remove exising file (if any)
+        archive = self.release_dir / f"{name}-Windows-x64.zip"
+        if archive.exists():
+            archive.unlink()
 
         try:
             os.chdir(install_dir)
-            subprocess.run(f"powershell Compress-Archive . {name}-Windows-x64.zip")
+            subprocess.run(f"powershell Compress-Archive . {archive}")
         except Exception as err:
             import traceback
             result = False
