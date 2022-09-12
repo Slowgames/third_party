@@ -28,9 +28,12 @@ include(FetchContent)
 
 set(_github_release "https://github.com/Slowgames/third_party/releases/download/v2022.01")
 
-set(_platform Darwin)
-set(_arch arm64)
+set(_platform ${CMAKE_HOST_SYSTEM_NAME})
+set(_arch ${CMAKE_HOST_SYSTEM_PROCESSOR})
 set(_archive_ext tar.bz2)
+if (WIN32)
+    set(_archive_ext zip)
+endif()
 
 macro(ThirdParty_Declare NAME)
     FetchContent_Declare(
