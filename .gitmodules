@@ -1,0 +1,24 @@
+[submodule "bgfx"]
+	path = bgfx
+	url = git@github.com:Slowgames/bgfx.git
+[submodule "bx"]
+	path = bx
+	url = git@github.com:Slowgames/bx.git
+[submodule "bimg"]
+	path = bimg
+	url = git@github.com:Slowgames/bimg.git
+[submodule "cglm"]
+	path = cglm
+	url = git@github.com:Slowgames/cglm.git
+[submodule "bgfx.cmake"]
+	path = bgfx.cmake
+	url = git@github.com:Slowgames/bgfx.cmake.git
+[submodule "SDL2"]
+	path = SDL2
+	url = git@github.com:Slowgames/SDL.git
+[submodule "argparse"]
+	path = argparse
+	url = git@github.com:Slowgames/argparse.git
+[submodule "flecs"]
+	path = flecs
+	url = git@github.com:Slowgames/flecs.git
