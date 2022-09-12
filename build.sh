@@ -43,10 +43,11 @@ function package_release {
 
 
 
-for repo in cglm flecs argparse SDL2; do
+for repo in flecs argparse SDL2; do
     build_repo $repo
 done
 
+build_repo cglm -DCGLM_STATIC=ON -DCGLM_SHARED=OFF
 build_repo bgfx.cmake -DBX_DIR=${_repo_root}/bx -DBIMG_DIR=${_repo_root}/bimg -DBGFX_DIR=${_repo_root}/bgfx
 
 for repo in cglm flecs argparse SDL2 bgfx.cmake; do

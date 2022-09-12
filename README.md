@@ -1,4 +1,56 @@
 # third_party
-Builds of third party deps
 
-Initial release/work here was created manually. Ultimately, scripts for building third part deps for releases will live here.
+Scripts and docs for building/collecting third_party dependencies.
+
+## Building
+
+```bash
+git clone --recursive https://github.com/slowgames/third_party.git
+
+cd third_party
+```
+
+### MacOS and Linux
+
+```bash
+./build.sh
+```
+
+### Windows
+
+**TODO**
+
+
+## Using released builds in a CMake project
+
+```cmake
+include(FetchContent)
+
+set(_github_release "https://github.com/Slowgames/third_party/releases/download/v2022.01")
+
+set(_platform Darwin)
+set(_arch arm64)
+set(_archive_ext tar.bz2)
+
+macro(ThirdParty_Declare NAME)
+    FetchContent_Declare(
+        ${NAME}
+        URL "${_github_release}/${NAME}-${_platform}-${_arch}.${_archive_ext}"
+    )
+    list(APPEND CMAKE_PREFIX_PATH ${CMAKE_BINARY_DIR}/_deps/${NAME}-src)
+endmacro(ThirdParty_Declare)
+
+ThirdParty_Declare(argparse)
+ThirdParty_Declare(cglm)
+ThirdParty_Declare(flecs)
+ThirdParty_Declare(sdl2)
+ThirdParty_Declare(bgfx)
+
+FetchContent_MakeAvailable(argparse cglm flecs sdl2 bgfx)
+
+find_package(SDL2 CONFIG REQUIRED GLOBAL)
+find_package(cglm CONFIG REQUIRED GLOBAL)
+find_package(flecs CONFIG REQUIRED GLOBAL)
+find_package(bgfx CONFIG REQUIRED GLOBAL)
+find_package(argparse CONFIG REQUIRED GLOBAL)
+```
