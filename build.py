@@ -1,11 +1,57 @@
 #!python3
 
-from gettext import install
 import os
+import platform
 import sys
 from pathlib import Path
 from typing import List
 import subprocess
+
+WINDOWS = platform.system() == 'Windows'
+
+
+def configure_build(install_dir: Path, source_dir: Path, extra_cmake_options: List[str] = []):
+    configure_cmd = ["cmake"]
+    if WINDOWS:
+        configure_cmd.extend([
+            "-G", "\"Visual Studio 17 2022\"",
+            "-A", "x64",
+        ])
+    else:
+        configure_cmd.extend([
+            "-G", "Ninja",
+        ])
+    configure_cmd.append(f"-DCMAKE_INSTALL_PREFIX={str(install_dir)}")
+    configure_cmd.extend(extra_cmake_options)
+    configure_cmd.append(str(source_dir))
+
+    if WINDOWS:
+        configure_cmd = " ".join(configure_cmd)
+
+    #print(configure_cmd)
+    configure_res = subprocess.run(configure_cmd)
+    configure_res.check_returncode()
+
+
+def install_build():
+    if WINDOWS:
+        build_cmd = "cmake --build . --config Release --target INSTALL"
+    else:
+        build_cmd = ["ninja", "install"]
+
+    build_res = subprocess.run(build_cmd)
+    build_res.check_returncode()
+
+
+def create_archive(archive: Path):
+    if WINDOWS:
+        cmd = f"powershell Compress-Archive . {archive}"
+        use_shell = False
+    else:
+        cmd = f"tar -Jcvf {archive} *"
+        use_shell = True
+    res = subprocess.run(cmd, shell=use_shell)
+    res.check_returncode()
 
 
 class Builder(object):
@@ -33,27 +79,12 @@ class Builder(object):
 
         build_dir.mkdir(exist_ok=True)
 
-        configure_cmd = [
-            "cmake",
-            "-G", "\"Visual Studio 17 2022\"",
-            "-A", "x64",
-            f"-DCMAKE_INSTALL_PREFIX={str(install_dir)}",
-        ] + extra_cmake_options
-        configure_cmd.append(str(source_dir))
-        configure_cmd = " ".join(configure_cmd)
-
         try:
             os.chdir(build_dir)
-
-            print(f"===== Configuring {name} =====")
-            print(configure_cmd)
-
-            configure_res = subprocess.run(configure_cmd)
-            configure_res.check_returncode()
-
-            build_res = subprocess.run("cmake --build . --config Release --target INSTALL")
-            build_res.check_returncode()
-
+            print(f"\n===== Configuring {name} =====")
+            configure_build(install_dir, source_dir, extra_cmake_options)
+            print(f"\n===== Building {name} =====")
+            install_build()
         except Exception as err:
             import traceback
             result = False
@@ -68,6 +99,12 @@ class Builder(object):
     def package_release(self, name: str) -> bool:
         result = True
 
+        system = platform.system()
+        machine = platform.machine()
+        archive_ext = 'tar.bz2'
+        if WINDOWS:
+            archive_ext = 'zip'
+
         # build the path to the install dir before modiyfing the name
         # I'm not proud of myself
 
@@ -77,13 +114,14 @@ class Builder(object):
             name = 'bgfx'
 
         # Setup archive output path. Remove exising file (if any)
-        archive = self.release_dir / f"{name}-Windows-x64.zip"
+        archive = self.release_dir / f"{name}-{system}-{machine}.{archive_ext}"
         if archive.exists():
             archive.unlink()
 
         try:
             os.chdir(install_dir)
-            subprocess.run(f"powershell Compress-Archive . {archive}")
+            print(f"\n===== Packaging {name} =====")
+            create_archive(archive)
         except Exception as err:
             import traceback
             result = False
@@ -115,8 +153,8 @@ def main() -> int:
     ]
 
     for name, extra_args in projects:
-        # if not builder.build_repo(name, extra_args):
-        #     return 1
+        if not builder.build_repo(name, extra_args):
+            return 1
         if not builder.package_release(name):
             return 1
 
