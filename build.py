@@ -45,7 +45,7 @@ def install_build():
 
 def create_archive(archive: Path):
     if WINDOWS:
-        cmd = f"powershell Compress-Archive . {archive}"
+        cmd = f"powershell Compress-Archive * {archive}"
         use_shell = False
     else:
         cmd = f"tar -Jcvf {archive} *"
@@ -104,6 +104,7 @@ class Builder(object):
         archive_ext = 'tar.bz2'
         if WINDOWS:
             archive_ext = 'zip'
+            machine = 'x64'
 
         # build the path to the install dir before modiyfing the name
         # I'm not proud of myself
@@ -150,6 +151,7 @@ def main() -> int:
             f"-DBIMG_DIR={bimg_dir}",
             f"-DBGFX_DIR={bgfx_dir}",
         ]),
+        ("raylib", []),
     ]
 
     for name, extra_args in projects:

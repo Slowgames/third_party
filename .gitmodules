@@ -22,3 +22,6 @@
 [submodule "flecs"]
 	path = flecs
 	url = git@github.com:Slowgames/flecs.git
+[submodule "raylib"]
+	path = raylib
+	url = git@github.com:Slowgames/raylib.git
