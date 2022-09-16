@@ -150,6 +150,7 @@ def main() -> int:
             f"-DBX_DIR={bx_dir}",
             f"-DBIMG_DIR={bimg_dir}",
             f"-DBGFX_DIR={bgfx_dir}",
+            "-DBGFX_BUILD_EXAMPLES=OFF",
         ]),
         ("raylib", []),
     ]
