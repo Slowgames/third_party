@@ -101,7 +101,7 @@ class Builder(object):
 
         system = platform.system()
         machine = platform.machine()
-        archive_ext = 'tar.bz2'
+        archive_ext = 'tar.xz'
         if WINDOWS:
             archive_ext = 'zip'
             machine = 'x64'
