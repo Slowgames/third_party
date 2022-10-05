@@ -104,7 +104,6 @@ class Builder(object):
         archive_ext = 'tar.xz'
         if WINDOWS:
             archive_ext = 'zip'
-            machine = 'x64'
 
         # build the path to the install dir before modiyfing the name
         # I'm not proud of myself
