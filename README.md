@@ -4,22 +4,13 @@ Scripts and docs for building/collecting third_party dependencies.
 
 ## Building
 
-You generally need to have all dependencies and possess a toolchain for compiling software. The build script here
-isn't going to perform any magic tricks. The entire idea here is that we build with some consistency.
-
-
 ```bash
-git clone --recursive https://github.com/slowgames/third_party.git
+git clone https://github.com/slowgames/third_party.git
 
 cd third_party
 
-python3 build.py
+cmake --workflow --preset=build-all
 ```
-
-### Windows
-
-In all likelihood you will need to run this from a visual studio developer shell. (I personally use Powershell)
-
 
 ## Using released builds in a CMake project
 
@@ -59,7 +50,3 @@ find_package(flecs CONFIG REQUIRED GLOBAL)
 find_package(bgfx CONFIG REQUIRED GLOBAL)
 find_package(argparse CONFIG REQUIRED GLOBAL)
 ```
-
-## Ideas?
-
-One thing that sure seems pretty interesting to me is to build everything with `zig cc`.
