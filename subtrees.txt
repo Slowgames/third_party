@@ -1,0 +1,8 @@
+git subtree add --prefix src/SDL3 https://github.com/libsdl-org/SDL main --squash
+git subtree add --prefix src/msdf-atlas-gen https://github.com/Chlumsky/msdf-atlas-gen master --squash
+git subtree add --prefix src/msdfgen https://github.com/Chlumsky/msdfgen master --squash
+git subtree add --prefix src/glslang https://github.com/KhronosGroup/glslang main --squash
+git subtree add --prefix src/SPIRV-Headers https://github.com/KhronosGroup/SPIRV-Headers main --squash
+git subtree add --prefix src/SPIRV-Tools https://github.com/KhronosGroup/SPIRV-Tools main --squash
+git subtree add --prefix src/shaderc https://github.com/google/shaderc main --squash
+git subtree add --prefix src/SPIRV-Cross https://github.com/KhronosGroup/SPIRV-Cross main --squash
