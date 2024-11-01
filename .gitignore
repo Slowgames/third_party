@@ -2,3 +2,4 @@ build/
 install/
 release/
 *.sublime-workspace
+dist/

@@ -1,0 +1,89 @@
+{
+    "version": 6,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 28,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "default",
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build",
+            "installDir": "${sourceDir}/dist",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_CONFIGURATION_TYPES": "Debug;Release",
+                "CMAKE_DEBUG_POSTFIX": "_debug",
+                "SHADERC_SKIP_TESTS": "ON",
+                "SHADERC_SKIP_EXAMPLES": "ON",
+                "SHADERC_SPIRV_HEADERS_DIR": "${sourceDir}/src/SPIRV-Headers",
+                "SHADERC_SPIRV_TOOLS_DIR": "${sourceDir}/src/SPIRV-Tools",
+                "SHADERC_GLSLANG_DIR": "${sourceDir}/src/glslang",
+                "SHADERC_SKIP_COPYRIGHT_CHECK": "ON",
+                "GLSLANG_ENABLE_INSTALL": "ON",
+                "SPIRV_CROSS_ENABLE_TESTS": "OFF",
+                "SPIRV_CROSS_ENABLE_CPP": "ON",
+                "SPIRV_CROSS_EXCEPTIONS_TO_ASSERTIONS": "ON",
+                "SPIRV_CROSS_FORCE_PIC": "ON",
+                "SPIRV_CROSS_WERROR": "ON",
+                "SPIRV_CROSS_SKIP_INSTALL": "OFF",
+                "SPIRV_CROSS_CLI": "ON",
+                "SKIP_SPIRV_TOOLS_INSTALL": "OFF",
+                "SPIRV_SKIP_EXECUTABLES": "ON",
+                "CGLM_SHARED": "OFF",
+                "CGLM_STATIC": "ON",
+                "SDL_OPENGL" : "OFF",
+                "SDL_OPENGLES" : "OFF",
+                "SDL_STATIC": "ON",
+                "SDL_SHARED": "OFF",
+                "SDL_DISABLE_INSTALL": "OFF"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "default-build",
+            "hidden": true,
+            "configurePreset": "default",
+            "inheritConfigureEnvironment": true,
+            "targets": [
+                "install"
+            ]
+        },
+        {
+            "name": "debug",
+            "inherits": [
+                "default-build"
+            ],
+            "configuration": "Debug"
+        },
+        {
+            "name": "release",
+            "inherits": [
+                "default-build"
+            ],
+            "configuration": "Release"
+        }
+    ],
+    "workflowPresets": [
+        {
+            "name": "build-all",
+            "displayName": "Build all targets for Debug and Release configurations.",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "default"
+                },
+                {
+                    "type": "build",
+                    "name": "debug"
+                },
+                {
+                    "type": "build",
+                    "name": "release"
+                }
+            ]
+        }
+    ]
+}
