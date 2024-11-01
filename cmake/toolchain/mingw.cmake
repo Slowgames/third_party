@@ -1,0 +1,26 @@
+include_guard()
+
+include(${CMAKE_CURRENT_LIST_DIR}/MingwBootstrap.cmake)
+
+set(CMAKE_SYSTEM_NAME Windows)
+set(CMAKE_SYSTEM_PROCESSOR x86_64)
+set(CMAKE_CROSS_COMPILING ON)
+
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
+message(STATUS "MingW: $ENV{MINGW_ROOT}")
+
+set(_prefix x86_64-w64-mingw32)
+
+set(CMAKE_C_COMPILER $ENV{MINGW_ROOT}/bin/${_prefix}-gcc)
+set(CMAKE_CXX_COMPILER $ENV{MINGW_ROOT}/bin/${_prefix}-g++)
+set(CMAKE_ASM_COMPILER $ENV{MINGW_ROOT}/bin/${_prefix}-as)
+set(CMAKE_OBJDUMP $ENV{MINGW_ROOT}/bin/${_prefix}-objdump)
+set(CMAKE_OBJCOPY $ENV{MINGW_ROOT}/bin/${_prefix}-objcopy)
+set(CMAKE_SIZE $ENV{MINGW_ROOT}/bin/${_prefix}-size)
+

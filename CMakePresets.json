@@ -7,10 +7,10 @@
     },
     "configurePresets": [
         {
-            "name": "default",
+            "name": "linux",
             "generator": "Ninja Multi-Config",
-            "binaryDir": "${sourceDir}/build",
-            "installDir": "${sourceDir}/dist",
+            "binaryDir": "${sourceDir}/build/x86_64-linux",
+            "installDir": "${sourceDir}/dist/x86_64-linux",
             "cacheVariables": {
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "CMAKE_CONFIGURATION_TYPES": "Debug;Release",
@@ -31,8 +31,6 @@
                 "SPIRV_CROSS_CLI": "ON",
                 "SKIP_SPIRV_TOOLS_INSTALL": "OFF",
                 "SPIRV_SKIP_EXECUTABLES": "ON",
-                "CGLM_SHARED": "OFF",
-                "CGLM_STATIC": "ON",
                 "SDL_OPENGL" : "OFF",
                 "SDL_OPENGLES" : "OFF",
                 "SDL_DISABLE_INSTALL": "OFF",
@@ -47,49 +45,102 @@
                 "MSDF_ATLAS_MSDFGEN_EXTERNAL": "ON",
                 "MSDF_ATLAS_INSTALL": "ON"
             }
+        },
+        {
+            "name": "mingw",
+            "inherits": [
+                "linux"
+            ],
+            "binaryDir": "${sourceDir}/build/x86_64-mingw",
+            "installDir": "${sourceDir}/dist/x86_64-mingw",
+            "toolchainFile": "${sourceDir}/cmake/toolchain/mingw.cmake",
+            "environment": {
+                "MINGW_ROOT": "${sourceDir}/build/x86_64-mingw/_deps/mingw-src"
+            }
         }
     ],
     "buildPresets": [
         {
-            "name": "default-build",
+            "name": "linux-build",
             "hidden": true,
-            "configurePreset": "default",
+            "configurePreset": "linux",
             "inheritConfigureEnvironment": true,
             "targets": [
                 "install"
             ]
         },
         {
-            "name": "debug",
+            "name": "linux-debug",
             "inherits": [
-                "default-build"
+                "linux-build"
             ],
             "configuration": "Debug"
         },
         {
-            "name": "release",
+            "name": "linux-release",
             "inherits": [
-                "default-build"
+                "linux-build"
+            ],
+            "configuration": "Release"
+        },
+        {
+            "name": "mingw-build",
+            "hidden": true,
+            "configurePreset": "mingw",
+            "inheritConfigureEnvironment": true,
+            "targets": [
+                "install"
+            ]
+        },
+        {
+            "name": "mingw-debug",
+            "inherits": [
+                "mingw-build"
+            ],
+            "configuration": "Debug"
+        },
+        {
+            "name": "mingw-release",
+            "inherits": [
+                "mingw-build"
             ],
             "configuration": "Release"
         }
     ],
     "workflowPresets": [
         {
-            "name": "build-all",
+            "name": "x86_64-linux",
             "displayName": "Build all targets for Debug and Release configurations.",
             "steps": [
                 {
                     "type": "configure",
-                    "name": "default"
+                    "name": "linux"
                 },
                 {
                     "type": "build",
-                    "name": "debug"
+                    "name": "linux-debug"
                 },
                 {
                     "type": "build",
-                    "name": "release"
+                    "name": "linux-release"
+                }
+            ]
+        },
+        {
+            "name": "x86_64-mingw",
+            "displayName": "Build all targets for Debug and Release configurations.",
+            "steps": [
+                {
+                    "type": "configure",
+                    "name": "mingw"
+                },
+                {
+                    "type": "build",
+                    "name": "mingw-debug"
+                },
+                {
+                    "type": "build",
+                    "name": "mingw-release"
                 }
             ]
         }
