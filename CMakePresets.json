@@ -35,9 +35,17 @@
                 "CGLM_STATIC": "ON",
                 "SDL_OPENGL" : "OFF",
                 "SDL_OPENGLES" : "OFF",
-                "SDL_STATIC": "ON",
-                "SDL_SHARED": "OFF",
-                "SDL_DISABLE_INSTALL": "OFF"
+                "SDL_DISABLE_INSTALL": "OFF",
+                "MSDFGEN_USE_VCPKG": "OFF",
+                "MSDFGEN_USE_SKIA": "OFF",
+                "MSDFGEN_INSTALL": "ON",
+                "MSDFGEN_DISABLE_SVG": "ON",
+                "MSDFGEN_DISABLE_PNG": "OFF",
+                "MSDF_ATLAS_USE_VCPKG": "OFF",
+                "MSDF_ATLAS_USE_SKIA": "OFF",
+                "MSDF_ATLAS_NO_ARTERY_FONT": "ON",
+                "MSDF_ATLAS_MSDFGEN_EXTERNAL": "ON",
+                "MSDF_ATLAS_INSTALL": "ON"
             }
         }
     ],
