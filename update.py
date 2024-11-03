@@ -11,6 +11,7 @@ SUBTREES = [
     ("src/shaderc", "https://github.com/google/shaderc", "main"),
     ("src/SPIRV-Cross", "https://github.com/KhronosGroup/SPIRV-Cross", "main"),
     ("src/SDL_gpu_shadercross", "https://github.com/libsdl-org/SDL_gpu_shadercross", "master"),
+    ("src/dav1dfile", "https://github.com/MoonsideGames/dav1dfile.git", "main"),
 ]
 
 SUBTREE_ADD_TMPL = 'git subtree add --prefix {prefix} {repo_url} {branch} --squash'
