@@ -8,7 +8,8 @@ cmake -B build/shadercross \
       -DCMAKE_DEBUG_POSTFIX="_debug" \
       -DCMAKE_PREFIX_PATH=`pwd`/dist/x86_64-linux \
       -DCMAKE_INSTALL_PREFIX=`pwd`/dist/x86_64-linux \
-      -DENABLE_INSTALL=ON
+      -DENABLE_INSTALL=ON \
+      -DENABLE_INSTALL_DEPS=ON
 
 cmake --build build/shadercross --config Debug --target install
 
