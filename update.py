@@ -10,7 +10,7 @@ SUBTREES = [
     ("src/SPIRV-Tools", "https://github.com/KhronosGroup/SPIRV-Tools", "main"),
     ("src/shaderc", "https://github.com/google/shaderc", "main"),
     ("src/SPIRV-Cross", "https://github.com/KhronosGroup/SPIRV-Cross", "main"),
-    ("src/SDL_gpu_shadercross", "https://github.com/libsdl-org/SDL_gpu_shadercross", "master"),
+    ("src/SDL_gpu_shadercross", "https://github.com/libsdl-org/SDL_gpu_shadercross", "main"),
     ("src/dav1dfile", "https://github.com/MoonsideGames/dav1dfile.git", "main"),
 ]
 
