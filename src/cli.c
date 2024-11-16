@@ -19,7 +19,7 @@
   3. This notice may not be removed or altered from any source distribution.
 */
 
-#include <SDL3_gpu_shadercross/SDL_gpu_shadercross.h>
+#include <SDL3_shadercross/SDL_shadercross.h>
 #include <SDL3/SDL_log.h>
 #include <SDL3/SDL_iostream.h>
 
@@ -42,7 +42,7 @@ void print_help(void)
     SDL_Log("  %-*s %s", column_width, "-d | --dest <value>", "Destination format. May be inferred from the filename. Values: [DXBC, DXIL, MSL, SPIRV, HLSL]");
     SDL_Log("  %-*s %s", column_width, "-t | --stage <value>", "Shader stage. May be inferred from the filename. Values: [vertex, fragment, compute]");
     SDL_Log("  %-*s %s", column_width, "-e | --entrypoint <value>", "Entrypoint function name. Default: \"main\".");
-    SDL_Log("  %-*s %s", column_width, "-m | --shadermodel <value>", "HLSL Shader Model. Only used with HLSL destination. Values: [5.0, 6.0]");
+    SDL_Log("  %-*s %s", column_width, "-I | --include <value>", "HLSL include directory. Only used with HLSL source. Optional.");
     SDL_Log("  %-*s %s", column_width, "-o | --output <value>", "Output file.");
 }
 
@@ -52,14 +52,13 @@ int main(int argc, char *argv[])
     bool sourceValid = false;
     bool destinationValid = false;
     bool stageValid = false;
-    bool shaderModelValid = false; // only required for HLSL destination
 
     bool spirvSource = false;
     ShaderCross_ShaderFormat destinationFormat = SHADERFORMAT_INVALID;
     SDL_ShaderCross_ShaderStage shaderStage = SDL_SHADERCROSS_SHADERSTAGE_VERTEX;
-    SDL_ShaderCross_ShaderModel shaderModel = SDL_SHADERCROSS_SHADERMODEL_INVALID;
     char *outputFilename = NULL;
     char *entrypointName = "main";
+    char *includeDir = NULL;
 
     char *filename = NULL;
     size_t fileSize = 0;
@@ -147,24 +146,19 @@ int main(int argc, char *argv[])
                 }
                 i += 1;
                 entrypointName = argv[i];
-            } else if (SDL_strcmp(arg, "-m") == 0 || SDL_strcmp(arg, "--model") == 0) {
+            } else if (SDL_strcmp(arg, "-I") == 0 || SDL_strcmp(arg, "--include") == 0) {
+                if (includeDir) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "'%s' can only be used once", arg);
+                    print_help();
+                    return 1;
+                }
                 if (i + 1 >= argc) {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s requires an argument", arg);
                     print_help();
                     return 1;
                 }
                 i += 1;
-                if (SDL_strcmp(argv[i], "5.0") == 0) {
-                    shaderModel = SDL_SHADERCROSS_SHADERMODEL_5_0;
-                    shaderModelValid = true;
-                } else if (SDL_strcmp(argv[i], "6.0") == 0) {
-                    shaderModel = SDL_SHADERCROSS_SHADERMODEL_6_0;
-                    shaderModelValid = true;
-                } else {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s is not a recognized HLSL Shader Model!", argv[i]);
-                    print_help();
-                    return 1;
-                }
+                includeDir = argv[i];
             } else if (SDL_strcmp(arg, "-o") == 0 || SDL_strcmp(arg, "--output") == 0) {
                 if (i + 1 >= argc) {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s requires an argument", arg);
@@ -262,6 +256,7 @@ int main(int argc, char *argv[])
     }
 
     size_t bytecodeSize;
+    int result = 0;
 
     if (spirvSource) {
         switch (destinationFormat) {
@@ -272,8 +267,13 @@ int main(int argc, char *argv[])
                     entrypointName,
                     shaderStage,
                     &bytecodeSize);
-                SDL_WriteIO(outputIO, buffer, bytecodeSize);
-                SDL_free(buffer);
+                if (buffer == NULL) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to compile DXBC from SPIR-V: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    SDL_WriteIO(outputIO, buffer, bytecodeSize);
+                    SDL_free(buffer);
+                }
                 break;
             }
 
@@ -284,8 +284,13 @@ int main(int argc, char *argv[])
                     entrypointName,
                     shaderStage,
                     &bytecodeSize);
-                SDL_WriteIO(outputIO, buffer, bytecodeSize);
-                SDL_free(buffer);
+                if (buffer == NULL) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to compile DXIL from SPIR-V: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    SDL_WriteIO(outputIO, buffer, bytecodeSize);
+                    SDL_free(buffer);
+                }
                 break;
             }
 
@@ -295,42 +300,42 @@ int main(int argc, char *argv[])
                     fileSize,
                     entrypointName,
                     shaderStage);
-                SDL_IOprintf(outputIO, "%s", buffer);
-                SDL_free(buffer);
+                if (buffer == NULL) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to transpile MSL from SPIR-V: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    SDL_IOprintf(outputIO, "%s", buffer);
+                    SDL_free(buffer);
+                }
                 break;
             }
 
             case SHADERFORMAT_HLSL: {
-                if (!shaderModelValid) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", "HLSL destination requires a shader model specification!");
-                    print_help();
-                    return 1;
-                }
-
                 char *buffer = SDL_ShaderCross_TranspileHLSLFromSPIRV(
                     fileData,
                     fileSize,
                     entrypointName,
-                    shaderStage,
-                    shaderModel);
-
+                    shaderStage);
                 if (buffer == NULL) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", "Failed to transpile HLSL from SPIRV!");
-                    return 1;
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to transpile HLSL from SPIRV: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    SDL_IOprintf(outputIO, "%s", buffer);
+                    SDL_free(buffer);
                 }
-                SDL_IOprintf(outputIO, "%s", buffer);
-                SDL_free(buffer);
                 break;
             }
 
             case SHADERFORMAT_SPIRV: {
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Input and output are both SPIRV. Did you mean to do that?");
-                return 1;
+                result = 1;
+                break;
             }
 
             case SHADERFORMAT_INVALID: {
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Destination format not provided!");
-                return 1;
+                result = 1;
+                break;
             }
         }
     } else {
@@ -339,10 +344,16 @@ int main(int argc, char *argv[])
                 Uint8 *buffer = SDL_ShaderCross_CompileDXBCFromHLSL(
                     fileData,
                     entrypointName,
+                    includeDir,
                     shaderStage,
                     &bytecodeSize);
-                SDL_WriteIO(outputIO, buffer, bytecodeSize);
-                SDL_free(buffer);
+                if (buffer == NULL) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to compile DXBC from HLSL: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    SDL_WriteIO(outputIO, buffer, bytecodeSize);
+                    SDL_free(buffer);
+                }
                 break;
             }
 
@@ -350,31 +361,45 @@ int main(int argc, char *argv[])
                 Uint8 *buffer = SDL_ShaderCross_CompileDXILFromHLSL(
                     fileData,
                     entrypointName,
+                    includeDir,
                     shaderStage,
                     &bytecodeSize);
-                SDL_WriteIO(outputIO, buffer, bytecodeSize);
-                SDL_free(buffer);
+                if (buffer == NULL) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to compile DXIL from HLSL: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    SDL_WriteIO(outputIO, buffer, bytecodeSize);
+                    SDL_free(buffer);
+                }
                 break;
             }
 
+            // TODO: Should we have TranspileMSLFromHLSL?
             case SHADERFORMAT_MSL: {
                 void *spirv = SDL_ShaderCross_CompileSPIRVFromHLSL(
                     fileData,
                     entrypointName,
+                    includeDir,
                     shaderStage,
                     &bytecodeSize);
                 if (spirv == NULL) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", "Failed to compile SPIR-V!");
-                    return 1;
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to transpile MSL from HLSL: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    char *buffer = SDL_ShaderCross_TranspileMSLFromSPIRV(
+                        spirv,
+                        bytecodeSize,
+                        entrypointName,
+                        shaderStage);
+                    if (buffer == NULL) {
+                        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to transpile MSL from HLSL: %s", SDL_GetError());
+                        result = 1;
+                    } else {
+                        SDL_IOprintf(outputIO, "%s", buffer);
+                        SDL_free(spirv);
+                        SDL_free(buffer);
+                    }
                 }
-                char *buffer = SDL_ShaderCross_TranspileMSLFromSPIRV(
-                    spirv,
-                    bytecodeSize,
-                    entrypointName,
-                    shaderStage);
-                SDL_IOprintf(outputIO, "%s", buffer);
-                SDL_free(spirv);
-                SDL_free(buffer);
                 break;
             }
 
@@ -382,41 +407,43 @@ int main(int argc, char *argv[])
                 Uint8 *buffer = SDL_ShaderCross_CompileSPIRVFromHLSL(
                     fileData,
                     entrypointName,
+                    includeDir,
                     shaderStage,
                     &bytecodeSize);
-                SDL_WriteIO(outputIO, buffer, bytecodeSize);
-                SDL_free(buffer);
-                return 0;
+                if (buffer == NULL) {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to compile SPIR-V From HLSL: %s", SDL_GetError());
+                    result = 1;
+                } else {
+                    SDL_WriteIO(outputIO, buffer, bytecodeSize);
+                    SDL_free(buffer);
+                }
+                break;
             }
 
             case SHADERFORMAT_HLSL: {
-                if (!shaderModelValid) {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", "HLSL destination requires a shader model specification!");
-                    print_help();
-                    return 1;
-                }
-
                 void *spirv = SDL_ShaderCross_CompileSPIRVFromHLSL(
                     fileData,
                     entrypointName,
+                    includeDir,
                     shaderStage,
                     &bytecodeSize);
 
                 if (spirv == NULL) {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", "Failed to compile HLSL to SPIRV!");
-                    return 1;
+                    result = 1;
+                    break;
                 }
 
                 char *buffer = SDL_ShaderCross_TranspileHLSLFromSPIRV(
                     spirv,
                     bytecodeSize,
                     entrypointName,
-                    shaderStage,
-                    shaderModel);
+                    shaderStage);
 
                 if (buffer == NULL) {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s", "Failed to transpile HLSL from SPIRV!");
-                    return 1;
+                    result = 1;
+                    break;
                 }
 
                 SDL_IOprintf(outputIO, "%s", buffer);
@@ -427,7 +454,8 @@ int main(int argc, char *argv[])
 
             case SHADERFORMAT_INVALID: {
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Destination format not provided!");
-                return 1;
+                result = 1;
+                break;
             }
         }
     }
@@ -435,5 +463,5 @@ int main(int argc, char *argv[])
     SDL_CloseIO(outputIO);
     SDL_free(fileData);
     SDL_ShaderCross_Quit();
-    return 0;
+    return result;
 }
