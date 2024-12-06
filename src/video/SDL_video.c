@@ -2413,7 +2413,7 @@ SDL_Window *SDL_CreateWindowWithProperties(SDL_PropertiesID props)
     if (flags & SDL_WINDOW_FULLSCREEN || IsFullscreenOnly(_this)) {
         SDL_Rect bounds;
 
-        SDL_GetDisplayBounds(display->id, &bounds);
+        SDL_GetDisplayBounds(display ? display->id : SDL_GetPrimaryDisplay(), &bounds);
         window->x = bounds.x;
         window->y = bounds.y;
         window->w = bounds.w;
@@ -3122,7 +3122,8 @@ bool SDL_SetWindowMaximumSize(SDL_Window *window, int max_w, int max_h)
         return SDL_InvalidParamError("max_h");
     }
 
-    if (max_w < window->min_w || max_h < window->min_h) {
+    if ((max_w && max_w < window->min_w) ||
+        (max_h && max_h < window->min_h)) {
         return SDL_SetError("SDL_SetWindowMaximumSize(): Tried to set maximum size smaller than minimum size");
     }
 

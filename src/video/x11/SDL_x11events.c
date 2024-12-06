@@ -35,6 +35,7 @@
 #include "SDL_x11xfixes.h"
 #include "SDL_x11settings.h"
 #include "../SDL_clipboard_c.h"
+#include "SDL_x11xsync.h"
 #include "../../core/unix/SDL_poll.h"
 #include "../../events/SDL_events_c.h"
 #include "../../events/SDL_mouse_c.h"
@@ -650,7 +651,9 @@ static void X11_HandleClipboardEvent(SDL_VideoDevice *_this, const XEvent *xeven
 
             int allocationsize = (length + 1) * sizeof(char*);
             for (j = 0, patom = (Atom*)data; j < length; j++, patom++) {
-                allocationsize += SDL_strlen( X11_XGetAtomName(display, *patom) ) + 1;
+                char *atomStr = X11_XGetAtomName(display, *patom);
+                allocationsize += SDL_strlen(atomStr) + 1;
+                X11_XFree(atomStr);
             }
 
             char **new_mime_types = SDL_AllocateTemporaryMemory(allocationsize);
@@ -658,12 +661,18 @@ static void X11_HandleClipboardEvent(SDL_VideoDevice *_this, const XEvent *xeven
                 char *strPtr = (char *)(new_mime_types + length + 1);
 
                 for (j = 0, patom = (Atom*)data; j < length; j++, patom++) {
+                    char *atomStr = X11_XGetAtomName(display, *patom);
                     new_mime_types[j] = strPtr;
-                    strPtr = stpcpy(strPtr, X11_XGetAtomName(display, *patom)) + 1;
+                    strPtr = stpcpy(strPtr, atomStr) + 1;
+                    X11_XFree(atomStr);
                 }
                 new_mime_types[length] = NULL;
 
                 SDL_SendClipboardUpdate(false, new_mime_types, length);
+            }
+
+            if (data) {
+                X11_XFree(data);
             }
         }
 
@@ -1368,6 +1377,11 @@ static void X11_DispatchEvent(SDL_VideoDevice *_this, XEvent *xevent)
                 }
             }
         }
+
+#ifdef SDL_VIDEO_DRIVER_X11_XSYNC
+        X11_HandleConfigure(data->window, &xevent->xconfigure);
+#endif /* SDL_VIDEO_DRIVER_X11_XSYNC */
+
         if (xevent->xconfigure.width != data->last_xconfigure.width ||
             xevent->xconfigure.height != data->last_xconfigure.height) {
             if (!data->disable_size_position_events) {
@@ -1492,6 +1506,17 @@ static void X11_DispatchEvent(SDL_VideoDevice *_this, XEvent *xevent)
             SDL_Log("window 0x%lx: WM_DELETE_WINDOW\n", xevent->xany.window);
 #endif
             SDL_SendWindowEvent(data->window, SDL_EVENT_WINDOW_CLOSE_REQUESTED, 0, 0);
+            break;
+        } else if ((xevent->xclient.message_type == videodata->atoms.WM_PROTOCOLS) &&
+                   (xevent->xclient.format == 32) &&
+                   (xevent->xclient.data.l[0] == videodata->atoms._NET_WM_SYNC_REQUEST)) {
+
+#ifdef DEBUG_XEVENTS
+            printf("window %p: _NET_WM_SYNC_REQUEST\n", data);
+#endif
+#ifdef SDL_VIDEO_DRIVER_X11_XSYNC
+            X11_HandleSyncRequest(data->window, &xevent->xclient);
+#endif /* SDL_VIDEO_DRIVER_X11_XSYNC */
             break;
         }
     } break;
