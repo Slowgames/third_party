@@ -45,6 +45,27 @@ typedef enum SDL_ShaderCross_ShaderStage
    SDL_SHADERCROSS_SHADERSTAGE_COMPUTE
 } SDL_ShaderCross_ShaderStage;
 
+typedef struct SDL_ShaderCross_GraphicsShaderInfo
+{
+    Uint32 numSamplers;         /**< The number of samplers defined in the shader. */
+    Uint32 numStorageTextures;  /**< The number of storage textures defined in the shader. */
+    Uint32 numStorageBuffers;   /**< The number of storage buffers defined in the shader. */
+    Uint32 numUniformBuffers;   /**< The number of uniform buffers defined in the shader. */
+} SDL_ShaderCross_GraphicsShaderInfo;
+
+typedef struct SDL_ShaderCross_ComputePipelineInfo
+{
+    Uint32 numSamplers;                  /**< The number of samplers defined in the shader. */
+    Uint32 numReadOnlyStorageTextures;   /**< The number of readonly storage textures defined in the shader. */
+    Uint32 numReadOnlyStorageBuffers;    /**< The number of readonly storage buffers defined in the shader. */
+    Uint32 numReadWriteStorageTextures;  /**< The number of read-write storage textures defined in the shader. */
+    Uint32 numReadWriteStorageBuffers;   /**< The number of read-write storage buffers defined in the shader. */
+    Uint32 numUniformBuffers;            /**< The number of uniform buffers defined in the shader. */
+    Uint32 threadCountX;                 /**< The number of threads in the X dimension. */
+    Uint32 threadCountY;                 /**< The number of threads in the Y dimension. */
+    Uint32 threadCountZ;                 /**< The number of threads in the Z dimension. */
+} SDL_ShaderCross_ComputePipelineInfo;
+
 /**
  * Initializes SDL_gpu_shadercross
  *
@@ -144,6 +165,7 @@ extern SDL_DECLSPEC void * SDLCALL SDL_ShaderCross_CompileDXILFromSPIRV(
  * \param bytecodeSize the length of the SPIRV bytecode.
  * \param entrypoint the entry point function name for the shader in UTF-8.
  * \param shaderStage the shader stage to compile the shader with.
+ * \param info a pointer filled in with shader metadata.
  * \returns a compiled SDL_GPUShader
  *
  * \threadsafety It is safe to call this function from any thread.
@@ -153,7 +175,8 @@ extern SDL_DECLSPEC SDL_GPUShader * SDLCALL SDL_ShaderCross_CompileGraphicsShade
     const Uint8 *bytecode,
     size_t bytecodeSize,
     const char *entrypoint,
-    SDL_GPUShaderStage shaderStage);
+    SDL_GPUShaderStage shaderStage,
+    SDL_ShaderCross_GraphicsShaderInfo *info);
 
 /**
  * Compile an SDL GPU compute pipeline from SPIRV code.
@@ -162,6 +185,7 @@ extern SDL_DECLSPEC SDL_GPUShader * SDLCALL SDL_ShaderCross_CompileGraphicsShade
  * \param bytecode the SPIRV bytecode.
  * \param bytecodeSize the length of the SPIRV bytecode.
  * \param entrypoint the entry point function name for the shader in UTF-8.
+ * \param info a pointer filled in with compute pipeline metadata.
  * \returns a compiled SDL_GPUComputePipeline
  *
  * \threadsafety It is safe to call this function from any thread.
@@ -170,7 +194,36 @@ extern SDL_DECLSPEC SDL_GPUComputePipeline * SDLCALL SDL_ShaderCross_CompileComp
     SDL_GPUDevice *device,
     const Uint8 *bytecode,
     size_t bytecodeSize,
-    const char *entrypoint);
+    const char *entrypoint,
+    SDL_ShaderCross_ComputePipelineInfo *info);
+
+/**
+ * Reflect graphics shader info from SPIRV code.
+ *
+ * \param bytecode the SPIRV bytecode.
+ * \param bytecodeSize the length of the SPIRV bytecode.
+ * \param info a pointer filled in with shader metadata.
+ *
+ * \threadsafety It is safe to call this function from any thread.
+ */
+extern SDL_DECLSPEC bool SDLCALL SDL_ShaderCross_ReflectGraphicsSPIRV(
+    const Uint8 *bytecode,
+    size_t bytecodeSize,
+    SDL_ShaderCross_GraphicsShaderInfo *info);
+
+/**
+ * Reflect compute pipeline info from SPIRV code.
+ *
+ * \param bytecode the SPIRV bytecode.
+ * \param bytecodeSize the length of the SPIRV bytecode.
+ * \param info a pointer filled in with compute pipeline metadata.
+ *
+ * \threadsafety It is safe to call this function from any thread.
+ */
+extern SDL_DECLSPEC bool SDLCALL SDL_ShaderCross_ReflectComputeSPIRV(
+    const Uint8 *bytecode,
+    size_t bytecodeSize,
+    SDL_ShaderCross_ComputePipelineInfo *info);
 
 /**
  * Get the supported shader formats that HLSL cross-compilation can output
@@ -187,6 +240,8 @@ extern SDL_DECLSPEC SDL_GPUShaderFormat SDLCALL SDL_ShaderCross_GetHLSLShaderFor
  * \param hlslSource the HLSL source code for the shader.
  * \param entrypoint the entry point function name for the shader in UTF-8.
  * \param includeDir the include directory for shader code. Optional, can be NULL.
+ * \param defines an array of define strings. Optional, can be NULL.
+ * \param numDefines the number of strings in the defines array.
  * \param shaderStage the shader stage to compile the shader with.
  * \param size filled in with the bytecode buffer size.
  * \returns an SDL_malloc'd buffer containing DXBC bytecode.
@@ -197,6 +252,8 @@ extern SDL_DECLSPEC void * SDLCALL SDL_ShaderCross_CompileDXBCFromHLSL(
     const char *hlslSource,
     const char *entrypoint,
     const char *includeDir,
+    char **defines,
+    Uint32 numDefines,
     SDL_ShaderCross_ShaderStage shaderStage,
     size_t *size);
 
@@ -208,6 +265,8 @@ extern SDL_DECLSPEC void * SDLCALL SDL_ShaderCross_CompileDXBCFromHLSL(
  * \param hlslSource the HLSL source code for the shader.
  * \param entrypoint the entry point function name for the shader in UTF-8.
  * \param includeDir the include directory for shader code. Optional, can be NULL.
+ * \param defines an array of define strings. Optional, can be NULL.
+ * \param numDefines the number of strings in the defines array.
  * \param shaderStage the shader stage to compile the shader with.
  * \param size filled in with the bytecode buffer size.
  * \returns an SDL_malloc'd buffer containing DXIL bytecode.
@@ -218,6 +277,8 @@ extern SDL_DECLSPEC void * SDLCALL SDL_ShaderCross_CompileDXILFromHLSL(
     const char *hlslSource,
     const char *entrypoint,
     const char *includeDir,
+    char **defines,
+    Uint32 numDefines,
     SDL_ShaderCross_ShaderStage shaderStage,
     size_t *size);
 
@@ -229,6 +290,8 @@ extern SDL_DECLSPEC void * SDLCALL SDL_ShaderCross_CompileDXILFromHLSL(
  * \param hlslSource the HLSL source code for the shader.
  * \param entrypoint the entry point function name for the shader in UTF-8.
  * \param includeDir the include directory for shader code. Optional, can be NULL.
+ * \param defines an array of define strings. Optional, can be NULL.
+ * \param numDefines the number of strings in the defines array.
  * \param shaderStage the shader stage to compile the shader with.
  * \param size filled in with the bytecode buffer size.
  * \returns an SDL_malloc'd buffer containing SPIRV bytecode.
@@ -239,6 +302,8 @@ extern SDL_DECLSPEC void * SDLCALL SDL_ShaderCross_CompileSPIRVFromHLSL(
     const char *hlslSource,
     const char *entrypoint,
     const char *includeDir,
+    char **defines,
+    Uint32 numDefines,
     SDL_ShaderCross_ShaderStage shaderStage,
     size_t *size);
 
@@ -249,7 +314,10 @@ extern SDL_DECLSPEC void * SDLCALL SDL_ShaderCross_CompileSPIRVFromHLSL(
  * \param hlslSource the HLSL source code for the shader.
  * \param entrypoint the entry point function name for the shader in UTF-8.
  * \param includeDir the include directory for shader code. Optional, can be NULL.
+ * \param defines an array of define strings. Optional, can be NULL.
+ * \param numDefines the number of strings in the defines array.
  * \param graphicsShaderStage the shader stage to compile the shader with.
+ * \param info a pointer filled in with shader metadata.
  * \returns a compiled SDL_GPUShader
  *
  * \threadsafety It is safe to call this function from any thread.
@@ -259,7 +327,10 @@ extern SDL_DECLSPEC SDL_GPUShader * SDLCALL SDL_ShaderCross_CompileGraphicsShade
     const char *hlslSource,
     const char *entrypoint,
     const char *includeDir,
-    SDL_GPUShaderStage graphicsShaderStage);
+    char **defines,
+    Uint32 numDefines,
+    SDL_GPUShaderStage graphicsShaderStage,
+    SDL_ShaderCross_GraphicsShaderInfo *info);
 
 /**
  * Compile an SDL GPU compute pipeline from code.
@@ -268,6 +339,9 @@ extern SDL_DECLSPEC SDL_GPUShader * SDLCALL SDL_ShaderCross_CompileGraphicsShade
  * \param hlslSource the HLSL source code for the shader.
  * \param entrypoint the entry point function name for the shader in UTF-8.
  * \param includeDir the include directory for shader code. Optional, can be NULL.
+ * \param defines an array of define strings. Optional, can be NULL.
+ * \param numDefines the number of strings in the defines array.
+ * \param info a pointer filled in with compute pipeline metadata.
  * \returns a compiled SDL_GPUComputePipeline
  *
  * \threadsafety It is safe to call this function from any thread.
@@ -276,7 +350,10 @@ extern SDL_DECLSPEC SDL_GPUComputePipeline * SDLCALL SDL_ShaderCross_CompileComp
     SDL_GPUDevice *device,
     const char *hlslSource,
     const char *entrypoint,
-    const char *includeDir);
+    const char *includeDir,
+    char **defines,
+    Uint32 numDefines,
+    SDL_ShaderCross_ComputePipelineInfo *info);
 
 #ifdef __cplusplus
 }
