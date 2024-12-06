@@ -146,6 +146,8 @@ static const IID D3D_IID_IDXGIFactory6 = { 0xc1b6694f, 0xff09, 0x44a9, { 0xb0, 0
 static const IID D3D_IID_IDXGIAdapter1 = { 0x29038f61, 0x3839, 0x4626, { 0x91, 0xfd, 0x08, 0x68, 0x79, 0x01, 0x1a, 0x05 } };
 #if (defined(SDL_PLATFORM_XBOXONE) || defined(SDL_PLATFORM_XBOXSERIES))
 static const IID D3D_IID_IDXGIDevice1 = { 0x77db970f, 0x6276, 0x48ba, { 0xba, 0x28, 0x07, 0x01, 0x43, 0xb4, 0x39, 0x2c } };
+#else
+static const IID D3D_IID_IDXGIDevice = { 0x54ec77fa, 0x1377, 0x44e6, { 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c } };
 #endif
 static const IID D3D_IID_IDXGISwapChain3 = { 0x94d99bdb, 0xf1f8, 0x4ab0, { 0xb2, 0x36, 0x7d, 0xa0, 0x17, 0x0e, 0xda, 0xb1 } };
 #ifdef HAVE_IDXGIINFOQUEUE
@@ -168,6 +170,7 @@ static const IID D3D_IID_ID3D12CommandSignature = { 0xc36a797c, 0xec80, 0x4f0a, 
 static const IID D3D_IID_ID3D12PipelineState = { 0x765a30f3, 0xf624, 0x4c6f, { 0xa8, 0x28, 0xac, 0xe9, 0x48, 0x62, 0x24, 0x45 } };
 static const IID D3D_IID_ID3D12Debug = { 0x344488b7, 0x6846, 0x474b, { 0xb9, 0x89, 0xf0, 0x27, 0x44, 0x82, 0x45, 0xe0 } };
 static const IID D3D_IID_ID3D12InfoQueue = { 0x0742a90b, 0xc387, 0x483f, { 0xb9, 0x46, 0x30, 0xa7, 0xe4, 0xe6, 0x14, 0x58 } };
+static const IID D3D_IID_ID3D12InfoQueue1 = { 0x2852dd88, 0xb484, 0x4c0c, { 0xb6, 0xb1, 0x67, 0x16, 0x85, 0x00, 0xe6, 0x00 } };
 
 // Enums
 
@@ -733,7 +736,7 @@ struct D3D12Renderer
     SDL_SharedObject *dxgidebug_dll;
 #endif
     ID3D12Debug *d3d12Debug;
-    bool supportsTearing;
+    BOOL supportsTearing;
     SDL_SharedObject *d3d12_dll;
     ID3D12Device *device;
     PFN_D3D12_SERIALIZE_ROOT_SIGNATURE D3D12SerializeRootSignature_func;
@@ -6849,7 +6852,7 @@ static D3D12Fence *D3D12_INTERNAL_AcquireFence(
             return NULL;
         }
         fence->handle = handle;
-        fence->event = CreateEventEx(NULL, 0, 0, EVENT_ALL_ACCESS);
+        fence->event = CreateEvent(NULL, FALSE, FALSE, NULL);
         SDL_SetAtomicInt(&fence->referenceCount, 0);
     } else {
         fence = renderer->availableFences[renderer->availableFenceCount - 1];
@@ -7940,7 +7943,7 @@ static void D3D12_INTERNAL_InitBlitResources(
     samplerCreateInfo.min_lod = 0;
     samplerCreateInfo.max_lod = 1000;
     samplerCreateInfo.max_anisotropy = 1.0f;
-    samplerCreateInfo.compare_op = SDL_GPU_COMPAREOP_ALWAYS;
+    samplerCreateInfo.compare_op = SDL_GPU_COMPAREOP_NEVER;
 
     renderer->blitNearestSampler = D3D12_CreateSampler(
         (SDL_GPURenderer *)renderer,
@@ -8169,17 +8172,124 @@ static bool D3D12_INTERNAL_TryInitializeD3D12DebugInfoQueue(D3D12Renderer *rende
 
     ID3D12InfoQueue_SetBreakOnSeverity(
         infoQueue,
-        D3D12_MESSAGE_SEVERITY_ERROR,
-        true);
-
-    ID3D12InfoQueue_SetBreakOnSeverity(
-        infoQueue,
         D3D12_MESSAGE_SEVERITY_CORRUPTION,
         true);
 
     ID3D12InfoQueue_Release(infoQueue);
 
     return true;
+}
+
+static void WINAPI D3D12_INTERNAL_OnD3D12DebugInfoMsg(
+    D3D12_MESSAGE_CATEGORY category, 
+    D3D12_MESSAGE_SEVERITY severity, 
+    D3D12_MESSAGE_ID id, 
+    LPCSTR description, 
+    void *context)
+{
+    char *catStr;
+    char *sevStr;
+
+    switch (category) {
+    case D3D12_MESSAGE_CATEGORY_APPLICATION_DEFINED:
+        catStr = "APPLICATION_DEFINED";
+        break;
+    case D3D12_MESSAGE_CATEGORY_MISCELLANEOUS:
+        catStr = "MISCELLANEOUS";
+        break;
+    case D3D12_MESSAGE_CATEGORY_INITIALIZATION:
+        catStr = "INITIALIZATION";
+        break;
+    case D3D12_MESSAGE_CATEGORY_CLEANUP:
+        catStr = "CLEANUP";
+        break;
+    case D3D12_MESSAGE_CATEGORY_COMPILATION:
+        catStr = "COMPILATION";
+        break;
+    case D3D12_MESSAGE_CATEGORY_STATE_CREATION:
+        catStr = "STATE_CREATION";
+        break;
+    case D3D12_MESSAGE_CATEGORY_STATE_SETTING:
+        catStr = "STATE_SETTING";
+        break;
+    case D3D12_MESSAGE_CATEGORY_STATE_GETTING:
+        catStr = "STATE_GETTING";
+        break;
+    case D3D12_MESSAGE_CATEGORY_RESOURCE_MANIPULATION:
+        catStr = "RESOURCE_MANIPULATION";
+        break;
+    case D3D12_MESSAGE_CATEGORY_EXECUTION:
+        catStr = "EXECUTION";
+        break;
+    case D3D12_MESSAGE_CATEGORY_SHADER:
+        catStr = "SHADER";
+        break;
+    default:
+        catStr = "UNKNOWN";
+        break;
+    }
+
+    switch (severity) {
+    case D3D12_MESSAGE_SEVERITY_CORRUPTION:
+        sevStr = "CORRUPTION";
+        break;
+    case D3D12_MESSAGE_SEVERITY_ERROR:
+        sevStr = "ERROR";
+        break;
+    case D3D12_MESSAGE_SEVERITY_WARNING:
+        sevStr = "WARNING";
+        break;
+    case D3D12_MESSAGE_SEVERITY_INFO:
+        sevStr = "INFO";
+        break;
+    case D3D12_MESSAGE_SEVERITY_MESSAGE:
+        sevStr = "MESSAGE";
+        break;
+    default:
+        sevStr = "UNKNOWN";
+        break;
+    }
+
+    if (severity <= D3D12_MESSAGE_SEVERITY_ERROR) {
+        SDL_LogError(
+            SDL_LOG_CATEGORY_GPU,
+            "D3D12 ERROR: %s [%s %s #%d]",
+            description,
+            catStr,
+            sevStr,
+            id);
+    } else {
+        SDL_LogWarn(
+            SDL_LOG_CATEGORY_GPU,
+            "D3D12 WARNING: %s [%s %s #%d]",
+            description,
+            catStr,
+            sevStr,
+            id);
+    }
+}
+
+static void D3D12_INTERNAL_TryInitializeD3D12DebugInfoLogger(D3D12Renderer *renderer)
+{
+    ID3D12InfoQueue1 *infoQueue = NULL;
+    HRESULT res;
+
+    res = ID3D12Device_QueryInterface(
+        renderer->device,
+        D3D_GUID(D3D_IID_ID3D12InfoQueue1),
+        (void **)&infoQueue);
+    if (FAILED(res)) {
+        return;
+    }
+
+    ID3D12InfoQueue1_RegisterMessageCallback(
+        infoQueue,
+        D3D12_INTERNAL_OnD3D12DebugInfoMsg,
+        D3D12_MESSAGE_CALLBACK_FLAG_NONE,
+        NULL,
+        NULL);
+    
+    ID3D12InfoQueue1_Release(infoQueue);
 }
 #endif
 
@@ -8198,6 +8308,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
     IDXGIFactory5 *factory5;
     IDXGIFactory6 *factory6;
     DXGI_ADAPTER_DESC1 adapterDesc;
+    LARGE_INTEGER umdVersion;
     PFN_D3D12_CREATE_DEVICE D3D12CreateDeviceFunc;
 #endif
     D3D12_FEATURE_DATA_ARCHITECTURE architecture;
@@ -8297,9 +8408,21 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
         D3D12_INTERNAL_DestroyRenderer(renderer);
         CHECK_D3D12_ERROR_AND_RETURN("Could not get adapter description", NULL);
     }
+    res = IDXGIAdapter1_CheckInterfaceSupport(renderer->adapter, D3D_GUID(D3D_IID_IDXGIDevice), &umdVersion);
+    if (FAILED(res)) {
+        D3D12_INTERNAL_DestroyRenderer(renderer);
+        CHECK_D3D12_ERROR_AND_RETURN("Could not get adapter driver version", NULL);
+    }
 
     SDL_LogInfo(SDL_LOG_CATEGORY_GPU, "SDL_GPU Driver: D3D12");
     SDL_LogInfo(SDL_LOG_CATEGORY_GPU, "D3D12 Adapter: %S", adapterDesc.Description);
+    SDL_LogInfo(
+        SDL_LOG_CATEGORY_GPU,
+        "D3D12 Driver: %d.%d.%d.%d",
+        HIWORD(umdVersion.HighPart),
+        LOWORD(umdVersion.HighPart),
+        HIWORD(umdVersion.LowPart),
+        LOWORD(umdVersion.LowPart));
 #endif
 
     // Load the D3D library
@@ -8408,6 +8531,7 @@ static SDL_GPUDevice *D3D12_CreateDevice(bool debugMode, bool preferLowPower, SD
         if (!D3D12_INTERNAL_TryInitializeD3D12DebugInfoQueue(renderer)) {
             return NULL;
         }
+        D3D12_INTERNAL_TryInitializeD3D12DebugInfoLogger(renderer);
     }
 #endif
 

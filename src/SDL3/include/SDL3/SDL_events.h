@@ -704,6 +704,21 @@ typedef struct SDL_CameraDeviceEvent
     SDL_CameraID which;       /**< SDL_CameraID for the device being added or removed or changing */
 } SDL_CameraDeviceEvent;
 
+
+/**
+ * Renderer event structure (event.render.*)
+ *
+ * \since This struct is available since SDL 3.1.7.
+ */
+typedef struct SDL_RenderEvent
+{
+    SDL_EventType type; /**< SDL_EVENT_RENDER_TARGETS_RESET, SDL_EVENT_RENDER_DEVICE_RESET, SDL_EVENT_RENDER_DEVICE_LOST */
+    Uint32 reserved;
+    Uint64 timestamp;   /**< In nanoseconds, populated using SDL_GetTicksNS() */
+    SDL_WindowID windowID; /**< The window containing the renderer in question. */
+} SDL_RenderEvent;
+
+
 /**
  * Touch finger event structure (event.tfinger.*)
  *
@@ -980,6 +995,7 @@ typedef union SDL_Event
     SDL_PenMotionEvent pmotion;             /**< Pen motion event data */
     SDL_PenButtonEvent pbutton;             /**< Pen button event data */
     SDL_PenAxisEvent paxis;                 /**< Pen axis event data */
+    SDL_RenderEvent render;                 /**< Render event data */
     SDL_DropEvent drop;                     /**< Drag and drop event data */
     SDL_ClipboardEvent clipboard;           /**< Clipboard event data */
 
@@ -1018,9 +1034,7 @@ SDL_COMPILE_TIME_ASSERT(SDL_Event, sizeof(SDL_Event) == sizeof(((SDL_Event *)NUL
  * polling or waiting for events (e.g. you are filtering them), then you must
  * call SDL_PumpEvents() to force an event queue update.
  *
- * \threadsafety This should only be run in the thread that initialized the
- *               video subsystem, and for extra safety, you should consider
- *               only doing those things on the main thread in any case.
+ * \threadsafety This function should only be called on the main thread.
  *
  * \since This function is available since SDL 3.1.3.
  *
@@ -1218,9 +1232,7 @@ extern SDL_DECLSPEC void SDLCALL SDL_FlushEvents(Uint32 minType, Uint32 maxType)
  *              the queue, or NULL.
  * \returns true if this got an event or false if there are none available.
  *
- * \threadsafety This should only be run in the thread that initialized the
- *               video subsystem, and for extra safety, you should consider
- *               only doing those things on the main thread in any case.
+ * \threadsafety This function should only be called on the main thread.
  *
  * \since This function is available since SDL 3.1.3.
  *
@@ -1244,9 +1256,7 @@ extern SDL_DECLSPEC bool SDLCALL SDL_PollEvent(SDL_Event *event);
  * \returns true on success or false if there was an error while waiting for
  *          events; call SDL_GetError() for more information.
  *
- * \threadsafety This should only be run in the thread that initialized the
- *               video subsystem, and for extra safety, you should consider
- *               only doing those things on the main thread in any case.
+ * \threadsafety This function should only be called on the main thread.
  *
  * \since This function is available since SDL 3.1.3.
  *
@@ -1276,9 +1286,7 @@ extern SDL_DECLSPEC bool SDLCALL SDL_WaitEvent(SDL_Event *event);
  * \returns true if this got an event or false if the timeout elapsed without
  *          any events available.
  *
- * \threadsafety This should only be run in the thread that initialized the
- *               video subsystem, and for extra safety, you should consider
- *               only doing those things on the main thread in any case.
+ * \threadsafety This function should only be called on the main thread.
  *
  * \since This function is available since SDL 3.1.3.
  *
