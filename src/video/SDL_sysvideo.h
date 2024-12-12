@@ -96,9 +96,9 @@ struct SDL_Window
     SDL_Surface *surface;
     bool surface_valid;
 
-    bool is_repositioning; // Set during an SDL_SetWindowPosition() call.
     bool is_hiding;
     bool restore_on_show; // Child was hidden recursively by the parent, restore when shown.
+    bool use_pending_position_for_fullscreen;
     bool is_destroying;
     bool is_dropping; // drag/drop in progress, expecting SDL_SendDropComplete().
 
@@ -352,6 +352,7 @@ struct SDL_VideoDevice
     bool (*HasScreenKeyboardSupport)(SDL_VideoDevice *_this);
     void (*ShowScreenKeyboard)(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID props);
     void (*HideScreenKeyboard)(SDL_VideoDevice *_this, SDL_Window *window);
+    void (*SetTextInputProperties)(SDL_VideoDevice *_this, SDL_Window *window, SDL_PropertiesID props);
     bool (*IsScreenKeyboardShown)(SDL_VideoDevice *_this, SDL_Window *window);
 
     // Clipboard
@@ -520,7 +521,6 @@ extern VideoBootStrap Wayland_bootstrap;
 extern VideoBootStrap VIVANTE_bootstrap;
 extern VideoBootStrap Emscripten_bootstrap;
 extern VideoBootStrap OFFSCREEN_bootstrap;
-extern VideoBootStrap NGAGE_bootstrap;
 extern VideoBootStrap QNX_bootstrap;
 extern VideoBootStrap OPENVR_bootstrap;
 

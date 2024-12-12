@@ -999,6 +999,7 @@
 #define SDL_WaitEventTimeout SDL_WaitEventTimeout_REAL
 #define SDL_WaitForGPUFences SDL_WaitForGPUFences_REAL
 #define SDL_WaitForGPUIdle SDL_WaitForGPUIdle_REAL
+#define SDL_WaitForGPUSwapchain SDL_WaitForGPUSwapchain_REAL
 #define SDL_WaitProcess SDL_WaitProcess_REAL
 #define SDL_WaitSemaphore SDL_WaitSemaphore_REAL
 #define SDL_WaitSemaphoreTimeout SDL_WaitSemaphoreTimeout_REAL
@@ -1228,3 +1229,6 @@
 #define SDL_ShowFileDialogWithProperties SDL_ShowFileDialogWithProperties_REAL
 #define SDL_IsMainThread SDL_IsMainThread_REAL
 #define SDL_RunOnMainThread SDL_RunOnMainThread_REAL
+#define SDL_SetGPUAllowedFramesInFlight SDL_SetGPUAllowedFramesInFlight_REAL
+#define SDL_RenderTextureAffine SDL_RenderTextureAffine_REAL
+#define SDL_WaitAndAcquireGPUSwapchainTexture SDL_WaitAndAcquireGPUSwapchainTexture_REAL

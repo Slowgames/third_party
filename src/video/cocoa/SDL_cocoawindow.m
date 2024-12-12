@@ -106,11 +106,14 @@
      */
     if ([menuItem action] == @selector(toggleFullScreen:)) {
         SDL_Window *window = [self findSDLWindow];
-        if (window == NULL) {
+        if (!window) {
             return NO;
-        } else if (window->flags & SDL_WINDOW_FULLSCREEN) {
+        }
+
+        SDL_CocoaWindowData *data = (__bridge SDL_CocoaWindowData *)window->internal;
+        if ((window->flags & SDL_WINDOW_FULLSCREEN) && ![data.listener isInFullscreenSpace]) {
             return NO;
-        } else if ((window->flags & SDL_WINDOW_RESIZABLE) == 0) {
+        } else if (!(window->flags & SDL_WINDOW_RESIZABLE)) {
             return NO;
         }
     }
@@ -1556,7 +1559,7 @@ static NSCursor *Cocoa_GetDesiredCursor(void)
 static void Cocoa_SendMouseButtonClicks(SDL_Mouse *mouse, NSEvent *theEvent, SDL_Window *window, Uint8 button, bool down)
 {
     SDL_MouseID mouseID = SDL_DEFAULT_MOUSE_ID;
-    const int clicks = (int)[theEvent clickCount];
+    //const int clicks = (int)[theEvent clickCount];
     SDL_Window *focus = SDL_GetKeyboardFocus();
 
     // macOS will send non-left clicks to background windows without raising them, so we need to
@@ -1565,14 +1568,16 @@ static void Cocoa_SendMouseButtonClicks(SDL_Mouse *mouse, NSEvent *theEvent, SDL
     //  event for the background window, this just makes sure the button is reported at the
     //  correct position in its own event.
     if (focus && ([theEvent window] == ((__bridge SDL_CocoaWindowData *)focus->internal).nswindow)) {
-        SDL_SendMouseButtonClicks(Cocoa_GetEventTimestamp([theEvent timestamp]), window, mouseID, button, down, clicks);
+        //SDL_SendMouseButtonClicks(Cocoa_GetEventTimestamp([theEvent timestamp]), window, mouseID, button, down, clicks);
+        SDL_SendMouseButton(Cocoa_GetEventTimestamp([theEvent timestamp]), window, mouseID, button, down);
     } else {
         const float orig_x = mouse->x;
         const float orig_y = mouse->y;
         const NSPoint point = [theEvent locationInWindow];
         mouse->x = (int)point.x;
         mouse->y = (int)(window->h - point.y);
-        SDL_SendMouseButtonClicks(Cocoa_GetEventTimestamp([theEvent timestamp]), window, mouseID, button, down, clicks);
+        //SDL_SendMouseButtonClicks(Cocoa_GetEventTimestamp([theEvent timestamp]), window, mouseID, button, down, clicks);
+        SDL_SendMouseButton(Cocoa_GetEventTimestamp([theEvent timestamp]), window, mouseID, button, down);
         mouse->x = orig_x;
         mouse->y = orig_y;
     }
